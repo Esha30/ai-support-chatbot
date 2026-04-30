@@ -52,17 +52,15 @@ ${KNOWLEDGE}`;
       systemInstruction: systemPrompt,
     });
 
-    // Pass conversation history - must start with 'user' role (Google AI requirement)
-    const validHistory = history
-      .map((msg: { role: string; text: string }) => ({
-        role: msg.role === "user" ? "user" : "model",
-        parts: [{ text: msg.text }],
-      }))
-      .filter((_: any, i: number, arr: any[]) => {
-        // Drop everything before the first user message
-        const firstUserIdx = arr.findIndex((m: any) => m.role === "user");
-        return i >= firstUserIdx;
-      });
+    // Pass conversation history - Google AI requires history to start with 'user' role
+    const mappedHistory = history.map((msg: { role: string; text: string }) => ({
+      role: msg.role === "user" ? "user" : "model",
+      parts: [{ text: msg.text }],
+    }));
+
+    // Only pass history if it starts with a user message; otherwise send empty
+    const firstUserIdx = mappedHistory.findIndex((m: any) => m.role === "user");
+    const validHistory = firstUserIdx === -1 ? [] : mappedHistory.slice(firstUserIdx);
 
     const chat = model.startChat({ history: validHistory });
 
