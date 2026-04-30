@@ -67,7 +67,7 @@ Info: ${setting.knowledge || "No knowledge provided"}`;
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
     const result = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       contents,
     });
 
