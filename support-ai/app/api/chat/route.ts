@@ -3,7 +3,6 @@
 import connectDB from "@/app/src/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import Settings from "@/app/src/lib/model/settings.model";
-import { GoogleGenAI } from "@google/genai";
 
 // ✅ CORS Helper
 function withCors(response: NextResponse) {
@@ -20,7 +19,7 @@ export async function POST(req: NextRequest) {
       return withCors(NextResponse.json({ message: "Invalid JSON" }, { status: 400 }));
     }
 
-    const { message, ownerId, history = [] } = body;
+    const { message, ownerId } = body;
 
     if (!message || !ownerId) {
       return withCors(NextResponse.json({ message: "Missing required fields" }, { status: 400 }));
@@ -33,46 +32,43 @@ export async function POST(req: NextRequest) {
       return withCors(NextResponse.json({ message: "Not configured. Please fill your Dashboard settings." }, { status: 404 }));
     }
 
-    const systemPrompt = `You are a professional customer support assistant for "${setting.businessName || "this business"}".
+    const prompt = `You are a helpful customer support assistant for "${setting.businessName || "this business"}".
 Answer ONLY using the knowledge base below. Be concise and friendly.
 If the answer is not in the knowledge base, say: "Please contact support at ${setting.supportEmail || "our support team"}."
 
 KNOWLEDGE BASE:
 Business Name: ${setting.businessName || "Not provided"}
 Support Email: ${setting.supportEmail || "Not provided"}
-Info: ${setting.knowledge || "No knowledge provided"}`;
+Info: ${setting.knowledge || "No knowledge provided"}
 
-    // Build the full contents array including history
-    // Only include valid user/model pairs (must start with user)
-    const userMessages = (history as { role: string; text: string }[]).filter(
-      (m) => m.role === "user"
+Customer Question: ${message}
+Assistant:`;
+
+    // ✅ Direct REST API call — bypasses SDK v1beta issues entirely
+    const apiKey = process.env.GEMINI_API_KEY?.replace(/"/g, "").trim();
+    const apiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 512 },
+        }),
+      }
     );
 
-    // Build contents: alternating user/model pairs from history + current message
-    const validPairs: { role: string; parts: { text: string }[] }[] = [];
-    for (const msg of history as { role: string; text: string }[]) {
-      if (validPairs.length === 0 && msg.role !== "user") continue; // skip leading model msgs
-      validPairs.push({
-        role: msg.role === "user" ? "user" : "model",
-        parts: [{ text: msg.text }],
-      });
+    const data = await apiRes.json();
+
+    if (!apiRes.ok) {
+      console.error("❌ Gemini API Error:", JSON.stringify(data));
+      return withCors(NextResponse.json({
+        message: `AI Error: ${data?.error?.message || "Unknown AI error"}`,
+      }, { status: 500 }));
     }
 
-    // Add the current user message
-    const contents = [
-      ...validPairs,
-      { role: "user", parts: [{ text: `${systemPrompt}\n\nCustomer: ${message}` }] },
-    ];
-
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-
-    const result = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
-      contents,
-    });
-
     const text =
-      result?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
       "I'm sorry, I couldn't generate a response. Please try again.";
 
     return withCors(NextResponse.json({ reply: text }));
