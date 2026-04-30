@@ -32,17 +32,19 @@ export async function POST(req: NextRequest) {
       return withCors(NextResponse.json({ message: "Not configured. Please fill your Dashboard settings." }, { status: 404 }));
     }
 
-    const prompt = `You are a helpful customer support assistant for "${setting.businessName || "this business"}".
-Answer ONLY using the knowledge base below. Be concise and friendly.
-If the answer is not in the knowledge base, say: "Please contact support at ${setting.supportEmail || "our support team"}."
+    const prompt = `You are a friendly and professional customer support assistant for "${setting.businessName || "this business"}". 
+Your goal is to help the customer using the knowledge base below. 
+- You may answer general greetings (like "hi", "who are you") naturally and politely.
+- For specific questions about the business, ONLY use the knowledge base.
+- If they ask a specific question that is NOT in the knowledge base, apologize and say: "Please contact support at ${setting.supportEmail || "our support team"}."
 
 KNOWLEDGE BASE:
 Business Name: ${setting.businessName || "Not provided"}
 Support Email: ${setting.supportEmail || "Not provided"}
-Info: ${setting.knowledge || "No knowledge provided"}
+Company Info / Training Data: ${setting.knowledge || "No specific information provided yet."}
 
-Customer Question: ${message}
-Assistant:`;
+Customer Message: ${message}
+Assistant Response:`;
 
     // ✅ Direct REST API call — bypasses SDK v1beta issues entirely
     const apiKey = process.env.GEMINI_API_KEY?.replace(/"/g, "").trim();
