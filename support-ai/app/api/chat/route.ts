@@ -86,7 +86,17 @@ export async function OPTIONS() {
   return withCors(new NextResponse(null, { status: 204 }));
 }
 
-// ✅ Health check
+// ✅ Health check & Model Diagnostic
 export async function GET() {
-  return withCors(NextResponse.json({ message: "Chat API is running ✅" }));
+  const apiKey = process.env.GEMINI_API_KEY?.replace(/"/g, "").trim();
+  if (!apiKey) return withCors(NextResponse.json({ message: "No API key found in Vercel" }));
+  
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
+    const data = await res.json();
+    const models = data.models?.map((m: any) => m.name) || data;
+    return withCors(NextResponse.json({ message: "Chat API is running ✅", availableModels: models }));
+  } catch (err) {
+    return withCors(NextResponse.json({ message: "Chat API is running ✅", error: "Failed to fetch models" }));
+  }
 }
