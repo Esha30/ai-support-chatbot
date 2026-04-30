@@ -12,14 +12,19 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    const { searchParams } = new URL(req.url);
+    const domain = searchParams.get("domain") || "";
+
     const redirectUri = `${baseUrl}/api/auth/callback`;
 
-    // if getAuthorizationUrl is async
-    const url = await scalekit.getAuthorizationUrl(redirectUri);
+    // Pass the domain to ScaleKit so it knows which SSO provider to use
+    const url = await scalekit.getAuthorizationUrl(redirectUri, {
+      domain: domain,
+    });
 
     console.log("Auth URL:", url);
 
-    return NextResponse.redirect(url, 302); // explicit redirect status
+    return NextResponse.redirect(url, 302);
   } catch (error) {
     console.error("Login Error:", error);
 
