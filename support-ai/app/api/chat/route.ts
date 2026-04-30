@@ -52,13 +52,19 @@ ${KNOWLEDGE}`;
       systemInstruction: systemPrompt,
     });
 
-    // Pass conversation history for memory
-    const chat = model.startChat({
-      history: history.map((msg: { role: string; text: string }) => ({
+    // Pass conversation history - must start with 'user' role (Google AI requirement)
+    const validHistory = history
+      .map((msg: { role: string; text: string }) => ({
         role: msg.role === "user" ? "user" : "model",
         parts: [{ text: msg.text }],
-      })),
-    });
+      }))
+      .filter((_: any, i: number, arr: any[]) => {
+        // Drop everything before the first user message
+        const firstUserIdx = arr.findIndex((m: any) => m.role === "user");
+        return i >= firstUserIdx;
+      });
+
+    const chat = model.startChat({ history: validHistory });
 
     const result = await chat.sendMessage(message);
     const text = result.response.text();
