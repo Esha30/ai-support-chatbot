@@ -27,7 +27,14 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <script 
+          src="/chatBot.js" 
+          data-owner-id="usr_123299872278317058"
+          async
+        ></script>
+      </body>
     </html>
   );
 }
