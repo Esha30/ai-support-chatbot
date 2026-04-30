@@ -56,9 +56,9 @@ function DashboardClient({ ownerId }: { ownerId: string }) {
           // ✅ FIX: changed POST → GET
           const result = await axios.get(`/api/settings/get?ownerId=${ownerId}`)
 
-          setBusinessName(result.data.businessName)
-          setSupportEmail(result.data.supportEmail)
-          setKnowledge(result.data.knowledge)
+          setBusinessName(result.data.businessName || "")
+          setSupportEmail(result.data.supportEmail || "")
+          setKnowledge(result.data.knowledge || "")
         } catch (error) {
           console.error("Error fetching settings:", error)
         }
