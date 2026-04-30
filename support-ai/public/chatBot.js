@@ -127,10 +127,15 @@
       });
       const data = await res.json();
       typing.remove();
-      addMessage(data.reply || "I'm having trouble connecting. Please try again.", "assistant");
+
+      if (!res.ok) {
+        addMessage(`Error: ${data.message || "Failed to connect"}`, "assistant");
+      } else {
+        addMessage(data.reply || "No response from AI.", "assistant");
+      }
     } catch (err) {
       typing.remove();
-      addMessage("Connection lost. Please check your internet.", "assistant");
+      addMessage("Connection failed. Please check if your Gemini API key is set in Vercel.", "assistant");
     }
   }
 
