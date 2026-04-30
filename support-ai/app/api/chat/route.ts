@@ -68,8 +68,11 @@ Assistant:`;
 
     return withCors(NextResponse.json({ reply: text }));
   } catch (error: any) {
-    console.error("Chat Error:", error);
-    return withCors(NextResponse.json({ message: "Error processing chat" }, { status: 500 }));
+    console.error("❌ Chat Error Detail:", error.message || error);
+    return withCors(NextResponse.json({ 
+      message: `Server Error: ${error.message || "Unknown error"}`,
+      debug: error.stack
+    }, { status: 500 }));
   }
 }
 
