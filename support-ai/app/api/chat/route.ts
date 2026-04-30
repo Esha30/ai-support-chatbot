@@ -60,7 +60,7 @@ Assistant:`;
 
     const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
     const result = await (genAI as any).models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-pro",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
