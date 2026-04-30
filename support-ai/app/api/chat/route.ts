@@ -58,11 +58,18 @@ ${historyContext}
 Customer: ${message}
 Assistant:`;
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY!,
+    });
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text() || "Please contact support.";
+    const result = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: prompt,
+    });
+
+    const text =
+      result?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "Please contact support.";
 
     return withCors(NextResponse.json({ reply: text }));
   } catch (error: any) {

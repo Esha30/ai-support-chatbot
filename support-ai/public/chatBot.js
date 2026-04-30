@@ -80,7 +80,7 @@
     });
     messageArea.appendChild(bubble);
     messageArea.scrollTop = messageArea.scrollHeight;
-    
+
     // Save to history
     conversationHistory.push({ role, text });
     if (conversationHistory.length > 10) conversationHistory.shift(); // Keep last 10
@@ -122,4 +122,3 @@
 
 })();
 
-})();

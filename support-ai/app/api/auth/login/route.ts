@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     const redirectUri = `${baseUrl}/api/auth/callback`;
 
     // Pass the domain to ScaleKit so it knows which SSO provider to use
-    const url = await scalekit.getAuthorizationUrl(redirectUri, {
+    const url = await (scalekit as any).getAuthorizationUrl(redirectUri, {
       domain: domain,
     });
 
