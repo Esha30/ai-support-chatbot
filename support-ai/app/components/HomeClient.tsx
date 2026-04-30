@@ -118,9 +118,15 @@ function HomeClient({ email }: { email?: string }) {
             <div className="flex items-center justify-center gap-4">
               <button
                 className="px-8 py-4 rounded-full bg-black text-white font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-xl shadow-black/10"
-                onClick={handleLogin}
+                onClick={() => {
+                  if (email) {
+                    router.push("/dashboard");
+                  } else {
+                    handleLogin();
+                  }
+                }}
               >
-                Get Started Free
+                {email ? "Go to Dashboard" : "Get Started Free"}
               </button>
               <button className="px-8 py-4 rounded-full border border-zinc-200 bg-white font-bold text-lg hover:bg-zinc-50 transition-all">
                 Learn More
