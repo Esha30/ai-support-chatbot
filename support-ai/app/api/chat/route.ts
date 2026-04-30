@@ -3,15 +3,9 @@
 import connectDB from "@/app/src/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import Settings from "@/app/src/lib/model/settings.model";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// ✅ Helper for CORS
-function withCors(response: NextResponse) {
-  response.headers.set("Access-Control-Allow-Origin", "*");
-  response.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  response.headers.set("Access-Control-Allow-Headers", "Content-Type");
-  return response;
-}
+// ... (withCors helper stays same)
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,11 +27,6 @@ export async function POST(req: NextRequest) {
       return withCors(NextResponse.json({ message: "Not configured" }, { status: 400 }));
     }
 
-    // Prepare context from history
-    const historyContext = history
-      .map((msg: any) => `${msg.role === "user" ? "Customer" : "Assistant"}: ${msg.text}`)
-      .join("\n");
-
     const KNOWLEDGE = `
 Business Name: ${setting.businessName || "Not provided"}
 Support Email: ${setting.supportEmail || "Not provided"}
@@ -52,19 +41,22 @@ If the answer isn't in the knowledge, say "Please contact support at ${setting.s
 KNOWLEDGE:
 ${KNOWLEDGE}
 
-CONVERSATION HISTORY:
-${historyContext}
+Customer Question: ${message}`;
 
-Customer: ${message}
-Assistant:`;
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-    const result = await (genAI as any).models.generateContent({
-      model: "gemini-pro",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    // Format history for the official SDK
+    const chat = model.startChat({
+      history: history.map((msg: any) => ({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [{ text: msg.text }],
+      })),
     });
 
-    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || "Please contact support.";
+    const result = await chat.sendMessage(prompt);
+    const response = await result.response;
+    const text = response.text();
 
     return withCors(NextResponse.json({ reply: text }));
   } catch (error: any) {
