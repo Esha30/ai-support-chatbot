@@ -128,7 +128,10 @@ function HomeClient({ email }: { email?: string }) {
               >
                 {email ? "Go to Dashboard" : "Get Started Free"}
               </button>
-              <button className="px-8 py-4 rounded-full border border-zinc-200 bg-white font-bold text-lg hover:bg-zinc-50 transition-all">
+              <button 
+                className="px-8 py-4 rounded-full border border-zinc-200 bg-white font-bold text-lg hover:bg-zinc-50 transition-all"
+                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+              >
                 Learn More
               </button>
             </div>
@@ -137,7 +140,7 @@ function HomeClient({ email }: { email?: string }) {
       </main>
 
       {/* FEATURES SECTION */}
-      <section className="bg-zinc-50/50 py-32 px-6 border-t border-zinc-100">
+      <section id="features" className="bg-zinc-50/50 py-32 px-6 border-t border-zinc-100">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-20">Why Businesses Choose SupportAI</h2>
           
