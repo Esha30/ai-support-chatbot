@@ -136,7 +136,7 @@
 
   sendBtn.addEventListener("click", handleSend);
   input.addEventListener("keypress", (e) => { if (e.key === "Enter") handleSend(); });
-  
+
   // Quick Actions Handler
   document.querySelectorAll(".quick-action").forEach(btn => {
     btn.addEventListener("click", () => handleSend(btn.innerText));
@@ -145,6 +145,5 @@
   // Welcome Message
   setTimeout(() => addMessage("Welcome! 👋 I'm your AI assistant. How can I help you today?", "assistant"), 600);
 
-})();
 })();
 
