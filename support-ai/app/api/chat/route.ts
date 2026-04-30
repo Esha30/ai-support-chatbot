@@ -3,7 +3,7 @@
 import connectDB from "@/app/src/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 import Settings from "@/app/src/lib/model/settings.model";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 // ✅ CORS Helper
 function withCors(response: NextResponse) {
@@ -33,39 +33,47 @@ export async function POST(req: NextRequest) {
       return withCors(NextResponse.json({ message: "Not configured. Please fill your Dashboard settings." }, { status: 404 }));
     }
 
-    const KNOWLEDGE = `
-Business Name: ${setting.businessName || "Not provided"}
-Support Email: ${setting.supportEmail || "Not provided"}
-Knowledge Base: ${setting.knowledge || "No knowledge provided"}
-`;
-
-    const systemPrompt = `You are a professional customer support assistant for "${setting.businessName}".
-Use ONLY the provided knowledge base to answer questions. Be concise and friendly.
-If the answer is not in the knowledge base, say "Please contact our support team at ${setting.supportEmail}."
+    const systemPrompt = `You are a professional customer support assistant for "${setting.businessName || "this business"}".
+Answer ONLY using the knowledge base below. Be concise and friendly.
+If the answer is not in the knowledge base, say: "Please contact support at ${setting.supportEmail || "our support team"}."
 
 KNOWLEDGE BASE:
-${KNOWLEDGE}`;
+Business Name: ${setting.businessName || "Not provided"}
+Support Email: ${setting.supportEmail || "Not provided"}
+Info: ${setting.knowledge || "No knowledge provided"}`;
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      systemInstruction: systemPrompt,
+    // Build the full contents array including history
+    // Only include valid user/model pairs (must start with user)
+    const userMessages = (history as { role: string; text: string }[]).filter(
+      (m) => m.role === "user"
+    );
+
+    // Build contents: alternating user/model pairs from history + current message
+    const validPairs: { role: string; parts: { text: string }[] }[] = [];
+    for (const msg of history as { role: string; text: string }[]) {
+      if (validPairs.length === 0 && msg.role !== "user") continue; // skip leading model msgs
+      validPairs.push({
+        role: msg.role === "user" ? "user" : "model",
+        parts: [{ text: msg.text }],
+      });
+    }
+
+    // Add the current user message
+    const contents = [
+      ...validPairs,
+      { role: "user", parts: [{ text: `${systemPrompt}\n\nCustomer: ${message}` }] },
+    ];
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+
+    const result = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents,
     });
 
-    // Pass conversation history - Google AI requires history to start with 'user' role
-    const mappedHistory = history.map((msg: { role: string; text: string }) => ({
-      role: msg.role === "user" ? "user" : "model",
-      parts: [{ text: msg.text }],
-    }));
-
-    // Only pass history if it starts with a user message; otherwise send empty
-    const firstUserIdx = mappedHistory.findIndex((m: any) => m.role === "user");
-    const validHistory = firstUserIdx === -1 ? [] : mappedHistory.slice(firstUserIdx);
-
-    const chat = model.startChat({ history: validHistory });
-
-    const result = await chat.sendMessage(message);
-    const text = result.response.text();
+    const text =
+      result?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "I'm sorry, I couldn't generate a response. Please try again.";
 
     return withCors(NextResponse.json({ reply: text }));
 
