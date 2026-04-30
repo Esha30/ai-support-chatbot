@@ -10,7 +10,7 @@ function EmbedClient({ ownerId }: { ownerId: string }) {
   const [copied, setCopied] = useState(false)
 
   const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 
   const embedCode = `<script src="${baseUrl}/chatbot.js" data-owner-id="${ownerId}"></script>`
 
